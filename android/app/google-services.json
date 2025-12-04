@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "84968602660",
+    "project_id": "agendafacil-backend",
+    "storage_bucket": "agendafacil-backend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:84968602660:android:fee835e18fb50264b06cb1",
+        "android_client_info": {
+          "package_name": "com.example.agendafaciljp_novo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "84968602660-pue6d79j4chrdldanl475mcti9cmkvpk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.agendafaciljp_novo",
+            "certificate_hash": "16022d445565294c5a750de83eb3255f84d61aa9"
+          }
+        },
+        {
+          "client_id": "84968602660-ghudhpg44hg8n6sgdk0knnfpnv5sf6hl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0OGLvVFdS5APTi_NhxGw31neBmgJFc_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "84968602660-ghudhpg44hg8n6sgdk0knnfpnv5sf6hl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "84968602660-tvj0flpal5g4tdeh7lpbc9t3niql636u.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.agendafaciljp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
