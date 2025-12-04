@@ -6,6 +6,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:agendafaciljp/firebase_options.dart';
 import 'package:agendafaciljp/providers/auth_provider.dart';
 import 'package:agendafaciljp/theme.dart';
+import 'package:agendafaciljp/models/doctor.dart';
 import 'package:agendafaciljp/screens/splash_screen.dart';
 import 'package:agendafaciljp/screens/auth/login_screen.dart';
 import 'package:agendafaciljp/screens/auth/register_screen.dart';
@@ -18,9 +19,11 @@ import 'package:agendafaciljp/screens/client/book_appointment_screen.dart';
 import 'package:agendafaciljp/screens/client/appointment_history_screen.dart';
 import 'package:agendafaciljp/screens/client/appointment_details_screen.dart';
 import 'package:agendafaciljp/screens/doctor/doctor_home_screen.dart';
+import 'package:agendafaciljp/screens/doctor/manage_schedule_screen.dart';
 import 'package:agendafaciljp/screens/admin/admin_home_screen.dart';
 import 'package:agendafaciljp/screens/admin/manage_doctors_screen.dart';
 import 'package:agendafaciljp/screens/admin/manage_specialties_screen.dart';
+import 'package:agendafaciljp/screens/admin/edit_doctor_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,6 +126,10 @@ final _router = GoRouter(
       path: '/doctor-home',
       builder: (context, state) => const DoctorHomeScreen(),
     ),
+    GoRoute(
+      path: '/manage-schedule',
+      builder: (context, state) => const ManageScheduleScreen(),
+    ),
 
     // Admin Routes
     GoRoute(
@@ -136,6 +143,13 @@ final _router = GoRouter(
     GoRoute(
       path: '/manage-specialties',
       builder: (context, state) => const ManageSpecialtiesScreen(),
+    ),
+    GoRoute(
+      path: '/edit-doctor',
+      builder: (context, state) {
+        final doctor = state.extra as Doctor;
+        return EditDoctorScreen(doctor: doctor);
+      },
     ),
   ],
 );

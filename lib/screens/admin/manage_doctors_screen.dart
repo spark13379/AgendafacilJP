@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:agendafaciljp/services/doctor_service.dart';
 import 'package:agendafaciljp/models/doctor.dart';
 import 'package:agendafaciljp/theme.dart';
@@ -27,7 +28,8 @@ class _ManageDoctorsScreenState extends State<ManageDoctorsScreen> {
 
   Future<void> _loadDoctors() async {
     setState(() => _isLoading = true);
-    final doctors = await _doctorService.getAllDoctors();
+    // O admin vê todos os médicos, ativos e inativos.
+    final doctors = await _doctorService.getAllDoctors(onlyActive: false);
     setState(() {
       _doctors = doctors;
       _isLoading = false;
@@ -54,7 +56,18 @@ class _ManageDoctorsScreenState extends State<ManageDoctorsScreen> {
           padding: AppSpacing.paddingLg,
           itemCount: _doctors.length,
           itemBuilder: (context, index) {
-            return DoctorCard(doctor: _doctors[index]);
+            final doctor = _doctors[index];
+            return Opacity(
+              opacity: doctor.isActive ? 1.0 : 0.5,
+              child: GestureDetector(
+                onTap: () async {
+                  // Navega para a edição e, quando voltar, atualiza a lista.
+                  await context.push('/edit-doctor', extra: doctor);
+                  _loadDoctors();
+                },
+                child: DoctorCard(doctor: doctor),
+              ),
+            );
           },
         ),
       ),

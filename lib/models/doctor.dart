@@ -19,6 +19,7 @@ class Doctor extends User {
   final String bio;
   final double rating;
   final int ratingCount;
+  final bool isActive;
   final Map<String, List<TimeSlot>> availableSchedule;
   final List<DateTime> blockedDates;
 
@@ -36,6 +37,7 @@ class Doctor extends User {
     required this.bio,
     this.rating = 0.0,
     this.ratingCount = 0,
+    this.isActive = true, // Padrão é ativo
     Map<String, List<TimeSlot>>? availableSchedule,
     List<DateTime>? blockedDates,
   }) : availableSchedule = availableSchedule ?? {},
@@ -51,6 +53,7 @@ class Doctor extends User {
     'bio': bio,
     'rating': rating,
     'ratingCount': ratingCount,
+    'isActive': isActive,
     'availableSchedule': availableSchedule.map(
           (key, value) => MapEntry(key, value.map((e) => e.toJson()).toList()),
     ),
@@ -71,6 +74,7 @@ class Doctor extends User {
     bio: json['bio'],
     rating: (json['rating'] as num).toDouble(),
     ratingCount: json['ratingCount'],
+    isActive: json['isActive'] ?? true, // Garante compatibilidade com médicos antigos
     availableSchedule: (json['availableSchedule'] as Map<String, dynamic>).map(
           (key, value) => MapEntry(
         key,
@@ -96,6 +100,7 @@ class Doctor extends User {
     String? bio,
     double? rating,
     int? ratingCount,
+    bool? isActive,
     Map<String, List<TimeSlot>>? availableSchedule,
     List<DateTime>? blockedDates,
   }) => Doctor(
@@ -112,6 +117,7 @@ class Doctor extends User {
     bio: bio ?? this.bio,
     rating: rating ?? this.rating,
     ratingCount: ratingCount ?? this.ratingCount,
+    isActive: isActive ?? this.isActive,
     availableSchedule: availableSchedule ?? this.availableSchedule,
     blockedDates: blockedDates ?? this.blockedDates,
   );

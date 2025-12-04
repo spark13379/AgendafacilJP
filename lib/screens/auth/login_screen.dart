@@ -23,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
-  String _selectedRole = 'client';
 
   @override
   void dispose() {
@@ -48,18 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success) {
       final user = authProvider.currentUser!;
 
-      if (user.role.name != _selectedRole) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Este usuário não é um ${_getRoleLabel(_selectedRole)}'),
-            backgroundColor: AppColors.statusCancelled,
-          ),
-        );
-        await authProvider.logout();
-        setState(() => _isLoading = false);
-        return;
-      }
-
+      // Lógica de redirecionamento baseada na role do usuário
       switch (user.role) {
         case UserRole.client:
           context.go('/client-home');
@@ -81,19 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = false);
-  }
-
-  String _getRoleLabel(String role) {
-    switch (role) {
-      case 'client':
-        return AppStrings.loginPatient;
-      case 'doctor':
-        return AppStrings.loginHealthProfessional;
-      case 'admin':
-        return AppStrings.loginAdmin;
-      default:
-        return '';
-    }
   }
 
   @override
@@ -118,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-                _buildRoleSelector(),
+                // O seletor de roles foi removido
                 const SizedBox(height: 24),
                 CustomTextField(
                   label: AppStrings.loginEmailOrCpfLabel,
@@ -213,47 +188,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRoleSelector() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.greyBorder.withAlpha(77),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.greyBorder),
-      ),
-      child: Row(
-        children: [
-          _buildRoleTab('client', AppStrings.loginPatient),
-          _buildRoleTab('doctor', AppStrings.loginHealthProfessional),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoleTab(String role, String label) {
-    final isSelected = _selectedRole == role;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedRole = role),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: isSelected ? AppColors.primaryBlue : AppColors.textSecondary,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
       ),
     );
   }
