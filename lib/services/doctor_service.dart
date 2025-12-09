@@ -5,7 +5,6 @@ import 'package:agendafaciljp/models/doctor.dart';
 class DoctorService {
   final CollectionReference _doctorsCollection = FirebaseFirestore.instance.collection('doctors');
 
-  // Por padrão, busca apenas médicos ativos. O painel de admin pode passar `onlyActive: false`.
   Future<List<Doctor>> getAllDoctors({bool onlyActive = true}) async {
     try {
       Query query = _doctorsCollection;
@@ -13,14 +12,16 @@ class DoctorService {
         query = query.where('isActive', isEqualTo: true);
       }
       final snapshot = await query.get();
+      
+      if (snapshot.docs.isEmpty && !onlyActive) {
+        await _initializeSampleData();
+        final newSnapshot = await query.get();
+        return newSnapshot.docs.map((doc) => Doctor.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      }
+      
       return snapshot.docs.map((doc) => Doctor.fromJson(doc.data() as Map<String, dynamic>)).toList();
     } catch (e) {
       debugPrint('Error loading doctors: $e');
-      // Se a coleção não existir, inicializa com dados de exemplo.
-      if (e is FirebaseException && e.code == 'unimplemented') {
-         await _initializeSampleData();
-         return getAllDoctors(onlyActive: onlyActive);
-      }
       return [];
     }
   }
@@ -39,9 +40,15 @@ class DoctorService {
 
   Future<List<Doctor>> getDoctorsBySpecialty(String specialtyId) async {
     try {
+      final checkSnapshot = await _doctorsCollection.limit(1).get();
+      if (checkSnapshot.docs.isEmpty) {
+        debugPrint('No doctors found in DB, initializing sample data...');
+        await _initializeSampleData();
+      }
+
       final snapshot = await _doctorsCollection
           .where('specialtyId', isEqualTo: specialtyId)
-          .where('isActive', isEqualTo: true) // Pacientes só veem médicos ativos
+          .where('isActive', isEqualTo: true)
           .get();
       return snapshot.docs.map((doc) => Doctor.fromJson(doc.data() as Map<String, dynamic>)).toList();
     } catch (e) {
@@ -66,47 +73,68 @@ class DoctorService {
     }
   }
 
-  Future<void> deleteDoctor(String id) async {
-    try {
-      await _doctorsCollection.doc(id).delete();
-    } catch (e) {
-      debugPrint('Error deleting doctor: $e');
-    }
-  }
-
-  // Função para popular o Firestore com dados de exemplo na primeira vez
   Future<void> _initializeSampleData() async {
     final now = DateTime.now();
     final sampleDoctors = [
-      Doctor(
+       Doctor(
         id: 'doc1',
         name: 'Dra. Paula Rodrigues',
-        email: 'paula.rodrigues@clinica.com',
-        phone: '(83) 99876-5432',
-        photoUrl: 'assets/images/Female_Doctor_Professional_null_1764593852505.jpg',
-        crm: 'CRM 12345',
-        specialtyId: 'sp1',
-        specialtyName: 'Cardiologia',
-        bio: 'Especialista em cardiologia com 15 anos de experiência.',
-        rating: 4.8,
-        ratingCount: 127,
-        createdAt: now,
-        updatedAt: now,
+        email: 'paula@email.com', phone: '(11)99991', crm: 'CRM 12345', 
+        specialtyId: 'sp1', specialtyName: 'Cardiologia', 
+        bio: 'Bio da Dra. Paula', createdAt: now, updatedAt: now, isActive: true, 
+        rating: 4.8, ratingCount: 120,
+        availableSchedule: {
+          'monday': [TimeSlot(start: '08:00', end: '12:00')],
+          'wednesday': [TimeSlot(start: '14:00', end: '18:00')],
+        }
       ),
-       Doctor(
-        id: 'doc2',
-        name: 'Dr. João Santos',
-        email: 'joao.santos@clinica.com',
-        phone: '(83) 99765-4321',
-        photoUrl: 'assets/images/Medical_Doctor_Portrait_null_1764593851897.jpg',
-        crm: 'CRM 23456',
-        specialtyId: 'sp2',
-        specialtyName: 'Pediatria',
-        bio: 'Pediatra dedicado ao cuidado integral de crianças e adolescentes.',
-        rating: 4.9,
-        ratingCount: 203,
-        createdAt: now,
-        updatedAt: now,
+      Doctor(
+        id: 'doc2', name: 'Dr. João Santos', email: 'joao@email.com', phone: '(11)99992', crm: 'CRM 23456', 
+        specialtyId: 'sp2', specialtyName: 'Pediatria', 
+        bio: 'Bio do Dr. João', createdAt: now, updatedAt: now, isActive: true, 
+        rating: 4.9, ratingCount: 203,
+        availableSchedule: {
+          'tuesday': [TimeSlot(start: '09:00', end: '13:00')],
+          'thursday': [TimeSlot(start: '15:00', end: '19:00')],
+        }
+      ),
+      Doctor(
+        id: 'doc3', name: 'Dra. Maria Silva', email: 'maria@email.com', phone: '(11)99993', crm: 'CRM 34567', 
+        specialtyId: 'sp3', specialtyName: 'Dermatologia', 
+        bio: 'Bio da Dra. Maria', createdAt: now, updatedAt: now, isActive: true, 
+        rating: 4.7, ratingCount: 89,
+        availableSchedule: {
+          'friday': [TimeSlot(start: '10:00', end: '16:00')],
+        }
+      ),
+      // Adicionando mais médicos com horários
+      Doctor(
+        id: 'doc4', name: 'Dr. Carlos Oliveira', email: 'carlos@email.com', phone: '(11)99994', crm: 'CRM 45678', 
+        specialtyId: 'sp4', specialtyName: 'Ortopedia', 
+        bio: 'Bio do Dr. Carlos', createdAt: now, updatedAt: now, isActive: true, 
+        rating: 4.6, ratingCount: 156,
+        availableSchedule: {
+          'monday': [TimeSlot(start: '08:00', end: '18:00')],
+          'tuesday': [TimeSlot(start: '08:00', end: '18:00')]
+        }
+      ),
+      Doctor(
+        id: 'doc5', name: 'Dra. Ana Costa', email: 'ana@email.com', phone: '(11)99995', crm: 'CRM 56789', 
+        specialtyId: 'sp6', specialtyName: 'Oftalmologia', 
+        bio: 'Bio da Dra. Ana', createdAt: now, updatedAt: now, isActive: true, 
+        rating: 4.9, ratingCount: 178,
+        availableSchedule: {
+          'wednesday': [TimeSlot(start: '07:00', end: '12:00')]
+        }
+      ),
+      Doctor(
+        id: 'doc6', name: 'Dr. Fernando Lima', email: 'fernando@email.com', phone: '(11)99996', crm: 'CRM 67890', 
+        specialtyId: 'sp8', specialtyName: 'Neurologia', 
+        bio: 'Bio do Dr. Fernando', createdAt: now, updatedAt: now, isActive: true, 
+        rating: 4.8, ratingCount: 112,
+        availableSchedule: {
+          'thursday': [TimeSlot(start: '13:00', end: '20:00')]
+        }
       ),
     ];
 
@@ -116,5 +144,6 @@ class DoctorService {
       batch.set(docRef, doctor.toJson());
     }
     await batch.commit();
+    debugPrint('>>>> Sample doctors with schedules initialized in Firestore!');
   }
 }

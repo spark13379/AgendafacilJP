@@ -59,6 +59,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   void _updateAvailableTimeSlots() async {
     if (_doctor == null) return;
 
+    // Verifica se a data selecionada está na lista de dias bloqueados
+    final isBlocked = _doctor!.blockedDates.any((blockedDate) => isSameDay(blockedDate, _selectedDate));
+
+    if (isBlocked) {
+      setState(() => _availableTimeSlots = []);
+      return;
+    }
+
     final weekDay = AppConstants.weekDays[_selectedDate.weekday - 1];
     final schedule = _doctor!.availableSchedule[weekDay];
 

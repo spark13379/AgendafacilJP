@@ -72,12 +72,18 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Meu Perfil',
+            onPressed: () => context.push('/doctor-profile/${user.id}'),
+          ),
+          IconButton(
             icon: const Icon(Icons.calendar_month),
             tooltip: 'Gerenciar Agenda',
             onPressed: () => context.push('/manage-schedule'),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
             onPressed: () async {
               await authProvider.logout();
               if (context.mounted) context.go('/login');

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agendafaciljp/models/user.dart';
 
 class TimeSlot {
@@ -60,33 +61,46 @@ class Doctor extends User {
     'blockedDates': blockedDates.map((e) => e.toIso8601String()).toList(),
   };
 
-  factory Doctor.fromJson(Map<String, dynamic> json) => Doctor(
-    id: json['id'],
-    name: json['name'],
-    email: json['email'],
-    phone: json['phone'],
-    photoUrl: json['photoUrl'],
-    createdAt: DateTime.parse(json['createdAt']),
-    updatedAt: DateTime.parse(json['updatedAt']),
-    crm: json['crm'],
-    specialtyId: json['specialtyId'],
-    specialtyName: json['specialtyName'],
-    bio: json['bio'],
-    rating: (json['rating'] as num).toDouble(),
-    ratingCount: json['ratingCount'],
-    isActive: json['isActive'] ?? true, // Garante compatibilidade com médicos antigos
-    availableSchedule: (json['availableSchedule'] as Map<String, dynamic>).map(
-          (key, value) => MapEntry(
-        key,
-        (value as List).map((e) => TimeSlot.fromJson(e)).toList(),
-      ),
-    ),
-    blockedDates: (json['blockedDates'] as List)
-        .map((e) => DateTime.parse(e))
-        .toList(),
-  );
+  factory Doctor.fromJson(Map<String, dynamic> json) {
+    // Função auxiliar para converter datas de forma segura
+    DateTime _parseDate(dynamic date) {
+      if (date is Timestamp) {
+        return date.toDate();
+      }
+      if (date is String) {
+        return DateTime.parse(date);
+      }
+      return DateTime.now(); // Fallback
+    }
 
-  Doctor copyWithDoctor({
+    return Doctor(
+      id: json['id'],
+      name: json['name'],
+      email: json['email'],
+      phone: json['phone'],
+      photoUrl: json['photoUrl'],
+      createdAt: _parseDate(json['createdAt']),
+      updatedAt: _parseDate(json['updatedAt']),
+      crm: json['crm'],
+      specialtyId: json['specialtyId'],
+      specialtyName: json['specialtyName'],
+      bio: json['bio'],
+      rating: (json['rating'] as num).toDouble(),
+      ratingCount: json['ratingCount'],
+      isActive: json['isActive'] ?? true, 
+      availableSchedule: (json['availableSchedule'] as Map<String, dynamic>? ?? {}).map(
+            (key, value) => MapEntry(
+          key,
+          (value as List).map((e) => TimeSlot.fromJson(e)).toList(),
+        ),
+      ),
+      blockedDates: (json['blockedDates'] as List? ?? [])
+          .map((e) => _parseDate(e))
+          .toList(),
+    );
+  }
+
+ Doctor copyWithDoctor({
     String? id,
     String? name,
     String? email,

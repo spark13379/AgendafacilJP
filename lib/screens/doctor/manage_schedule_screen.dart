@@ -17,34 +17,50 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
   final DoctorService _doctorService = DoctorService();
   Doctor? _doctor;
 
-  // Controle do Calendário
+  // Controle do Calendário de Bloqueios
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Set<DateTime> _blockedDates = {};
 
+  // Controle dos Horários Semanais
+  late Map<String, List<TimeSlot>> _weeklySchedule;
+  final List<String> _weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  final Map<String, String> _weekDayLabels = {
+    'monday': 'Segunda-feira',
+    'tuesday': 'Terça-feira',
+    'wednesday': 'Quarta-feira',
+    'thursday': 'Quinta-feira',
+    'friday': 'Sexta-feira',
+    'saturday': 'Sábado',
+    'sunday': 'Domingo',
+  };
+
   @override
   void initState() {
     super.initState();
-    // Carrega os dados do médico logado
     final authProvider = context.read<AuthProvider>();
     if (authProvider.currentUser is Doctor) {
       _doctor = authProvider.currentUser as Doctor;
-      // Converte a lista de datas para um Set para eficiência
       _blockedDates = Set.from(_doctor!.blockedDates);
+      _weeklySchedule = Map.from(_doctor!.availableSchedule.map((key, value) => MapEntry(key, List<TimeSlot>.from(value))));
+    } else {
+      _weeklySchedule = {};
     }
     _selectedDay = _focusedDay;
   }
 
-  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+  // ----- Lógica para a Aba de Bloqueios -----
+  void _onDaySelectedForBlocking(DateTime selectedDay, DateTime focusedDay) {
     setState(() {
       _selectedDay = selectedDay;
       _focusedDay = focusedDay;
 
-      if (_blockedDates.contains(selectedDay)) {
-        _blockedDates.remove(selectedDay);
+      final dayOnly = DateTime.utc(selectedDay.year, selectedDay.month, selectedDay.day);
+      if (_blockedDates.contains(dayOnly)) {
+        _blockedDates.remove(dayOnly);
       } else {
-        _blockedDates.add(selectedDay);
+        _blockedDates.add(dayOnly);
       }
     });
   }
@@ -52,13 +68,8 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
   Future<void> _saveBlockedDates() async {
     if (_doctor == null) return;
 
-    final updatedDoctor = _doctor!.copyWithDoctor(
-      blockedDates: _blockedDates.toList(),
-    );
-
+    final updatedDoctor = _doctor!.copyWithDoctor(blockedDates: _blockedDates.toList());
     await _doctorService.updateDoctor(updatedDoctor);
-
-    // Atualiza o provedor de autenticação com os novos dados
     context.read<AuthProvider>().updateUser(updatedDoctor);
 
     if (mounted) {
@@ -66,6 +77,93 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
         const SnackBar(content: Text('Datas de bloqueio salvas com sucesso!')),
       );
     }
+  }
+
+  // ----- Lógica para a Aba de Horários -----
+  Future<void> _saveWeeklySchedule() async {
+    if (_doctor == null) return;
+
+    final updatedDoctor = _doctor!.copyWithDoctor(availableSchedule: _weeklySchedule);
+    await _doctorService.updateDoctor(updatedDoctor);
+    context.read<AuthProvider>().updateUser(updatedDoctor);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Horários de atendimento salvos com sucesso!')),
+      );
+    }
+  }
+  
+  Future<void> _editDaySchedule(String dayKey) async {
+    List<TimeSlot> currentSlots = List.from(_weeklySchedule[dayKey] ?? []);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Editar Horários - ${_weekDayLabels[dayKey]}'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: currentSlots.length,
+                  itemBuilder: (context, index) {
+                    final slot = currentSlots[index];
+                    return ListTile(
+                      title: Text('${slot.start} - ${slot.end}'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          setDialogState(() {
+                            currentSlots.removeAt(index);
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Adicionar Horário'),
+                  onPressed: () async {
+                    final TimeOfDay? startTime = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                    if (startTime == null) return;
+                    final TimeOfDay? endTime = await showTimePicker(context: context, initialTime: startTime.replacing(hour: startTime.hour + 1));
+                    if (endTime == null) return;
+
+                    final newSlot = TimeSlot(
+                      start: startTime.format(context),
+                      end: endTime.format(context),
+                    );
+                    setDialogState(() {
+                      currentSlots.add(newSlot);
+                      // Ordena os horários
+                      currentSlots.sort((a, b) => a.start.compareTo(b.start));
+                    });
+                  },
+                ),
+                TextButton(
+                  child: const Text('Cancelar'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                TextButton(
+                  child: const Text('Salvar'),
+                  onPressed: () {
+                    setState(() {
+                      _weeklySchedule[dayKey] = currentSlots;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -84,18 +182,54 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
         ),
         body: TabBarView(
           children: [
-            // Aba de Horários (Placeholder)
             _buildWeeklyScheduleTab(),
-
-            // Aba de Bloqueios
             _buildBlockedDatesTab(),
           ],
         ),
       ),
     );
   }
+  
+  // ----- Aba de Horários Semanais -----
+  Widget _buildWeeklyScheduleTab() {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: _weekDays.length,
+            itemBuilder: (context, index) {
+              final dayKey = _weekDays[index];
+              final dayLabel = _weekDayLabels[dayKey]!;
+              final slots = _weeklySchedule[dayKey] ?? [];
 
-  // Constrói a aba de bloqueio de datas
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(dayLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: slots.isEmpty
+                      ? const Text('Não atende neste dia')
+                      : Text(slots.map((s) => '${s.start} - ${s.end}').join(', ')),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _editDaySchedule(dayKey),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton(
+            onPressed: _saveWeeklySchedule,
+            child: const Text('Salvar Horários de Atendimento'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ----- Aba de Bloqueio de Datas -----
   Widget _buildBlockedDatesTab() {
     return Column(
       children: [
@@ -106,7 +240,7 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
           focusedDay: _focusedDay,
           calendarFormat: _calendarFormat,
           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-          onDaySelected: _onDaySelected,
+          onDaySelected: _onDaySelectedForBlocking,
           onFormatChanged: (format) {
             if (_calendarFormat != format) {
               setState(() {
@@ -118,9 +252,9 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
             _focusedDay = focusedDay;
           },
           calendarBuilders: CalendarBuilders(
-            // Estiliza os dias bloqueados
             defaultBuilder: (context, day, focusedDay) {
-              if (_blockedDates.any((blockedDay) => isSameDay(blockedDay, day))) {
+              final dayOnly = DateTime.utc(day.year, day.month, day.day);
+              if (_blockedDates.any((blockedDay) => isSameDay(blockedDay, dayOnly))) {
                 return Container(
                   margin: const EdgeInsets.all(4.0),
                   alignment: Alignment.center,
@@ -128,10 +262,7 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    day.day.toString(),
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  child: Text(day.day.toString(), style: const TextStyle(color: Colors.white)),
                 );
               }
               return null;
@@ -143,24 +274,10 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
           padding: const EdgeInsets.all(16.0),
           child: ElevatedButton(
             onPressed: _saveBlockedDates,
-            child: const Text('Salvar Bloqueios'),
+            child: const Text('Salvar Datas Bloqueadas'),
           ),
         ),
       ],
-    );
-  }
-
-  // Constrói a aba de horários semanais (Placeholder)
-  Widget _buildWeeklyScheduleTab() {
-    // Lógica para editar os horários virá aqui
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(20.0),
-        child: Text(
-          'Funcionalidade para definir os horários de atendimento padrão para cada dia da semana em desenvolvimento.',
-          textAlign: TextAlign.center,
-        ),
-      ),
     );
   }
 }

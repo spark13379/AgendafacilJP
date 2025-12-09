@@ -34,6 +34,14 @@ class _ManageSpecialtiesScreenState extends State<ManageSpecialtiesScreen> {
     });
   }
 
+  void _navigateToEdit(Specialty specialty) {
+    // TODO: Implementar a navegação para a tela de edição de especialidade
+    // Exemplo: context.push('/edit-specialty', extra: specialty);
+     ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Edição de ${specialty.name} ainda não implementada.')),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,7 +68,11 @@ class _ManageSpecialtiesScreenState extends State<ManageSpecialtiesScreen> {
           ),
           itemCount: _specialties.length,
           itemBuilder: (context, index) {
-            return SpecialtyCard(specialty: _specialties[index]);
+            final specialty = _specialties[index];
+            return SpecialtyCard(
+              specialty: specialty,
+              onTap: () => _navigateToEdit(specialty),
+            );
           },
         ),
       ),
