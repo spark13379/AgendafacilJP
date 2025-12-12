@@ -61,14 +61,12 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
 
     await _doctorService.updateDoctor(updatedDoctor);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Médico atualizado com sucesso!')),
-      );
-      Navigator.of(context).pop();
-    }
+    if (!mounted) return;
 
-    setState(() => _isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Médico atualizado com sucesso!')),
+    );
+    Navigator.of(context).pop();
   }
 
   @override

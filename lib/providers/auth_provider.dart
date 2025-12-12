@@ -25,32 +25,37 @@ class AuthProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final success = await _authService.login(email, password);
+    final userCredential = await _authService.login(email, password);
 
-    if (success) {
-      _currentUser = await _authService.getCurrentUser();
+    if (userCredential != null) {
+      _currentUser = await _authService.getUserData(userCredential.user!.uid);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } else {
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
-
-    _isLoading = false;
-    notifyListeners();
-
-    return success;
   }
 
   Future<bool> register(User user, String password) async {
     _isLoading = true;
     notifyListeners();
 
-    final success = await _authService.register(user, password);
+    final userCredential = await _authService.register(user, password);
 
-    if (success) {
-      _currentUser = await _authService.getCurrentUser();
+    if (userCredential != null) {
+      // O usuário já foi salvo no Firestore pelo register, agora só atualizamos o estado local
+      _currentUser = await _authService.getUserData(userCredential.user!.uid);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } else {
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
-
-    _isLoading = false;
-    notifyListeners();
-
-    return success;
   }
 
   Future<void> logout() async {

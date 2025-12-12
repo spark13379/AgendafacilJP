@@ -1,57 +1,58 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:agendafaciljp/models/user.dart' as app_user;
 import 'package:agendafaciljp/services/user_service.dart';
-import 'package:agendafaciljp/services/doctor_service.dart'; // Importa o serviço de médicos
+import 'package:agendafaciljp/services/doctor_service.dart';
 
 class AuthService {
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
   final UserService _userService = UserService();
-  final DoctorService _doctorService = DoctorService(); // Instancia o serviço de médicos
+  final DoctorService _doctorService = DoctorService();
 
-  Future<app_user.User?> getCurrentUser() async {
+  // Modificado para buscar dados de forma mais genérica
+  Future<app_user.User?> getUserData(String uid) async {
     try {
-      final firebaseUser = _firebaseAuth.currentUser;
-      if (firebaseUser == null) return null;
-
-      // Tenta buscar primeiro na coleção de usuários (clientes/admins)
-      app_user.User? user = await _userService.getUserById(firebaseUser.uid);
-
-      // Se não encontrar, tenta buscar na coleção de médicos
-      if (user == null) {
-        user = await _doctorService.getDoctorById(firebaseUser.uid);
-      }
-
+      app_user.User? user = await _userService.getUserById(uid);
+      user ??= await _doctorService.getDoctorById(uid);
       return user;
     } catch (e) {
-      debugPrint('Error getting current user: $e');
+      debugPrint('Error getting user data: $e');
       return null;
     }
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<app_user.User?> getCurrentUser() async {
+    final firebaseUser = _firebaseAuth.currentUser;
+    if (firebaseUser == null) return null;
+    return await getUserData(firebaseUser.uid);
+  }
+
+  // Modificado para retornar UserCredential
+  Future<firebase_auth.UserCredential?> login(String email, String password) async {
     try {
-      await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
-      return true;
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
+      return credential;
     } catch (e) {
       debugPrint('Error during login: $e');
-      return false;
+      return null;
     }
   }
 
-  Future<bool> register(app_user.User user, String password) async {
+  // Modificado para retornar UserCredential
+  Future<firebase_auth.UserCredential?> register(app_user.User user, String password) async {
     try {
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(email: user.email, password: password);
       final firebaseUser = credential.user;
-      if (firebaseUser == null) return false;
+      if (firebaseUser == null) return null;
 
+      // Associa o ID do Firebase ao nosso modelo de usuário e salva no Firestore
       final newUser = user.copyWith(id: firebaseUser.uid);
       await _userService.addUser(newUser);
 
-      return true;
+      return credential;
     } catch (e) {
       debugPrint('Error during registration: $e');
-      return false;
+      return null;
     }
   }
 

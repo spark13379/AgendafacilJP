@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:agendafaciljp/providers/auth_provider.dart';
 import 'package:agendafaciljp/services/appointment_service.dart';
+import 'package:agendafaciljp/services/doctor_service.dart';
 import 'package:agendafaciljp/models/appointment.dart';
 import 'package:agendafaciljp/theme.dart';
 import 'package:agendafaciljp/widgets/appointment_card.dart';
@@ -19,36 +20,69 @@ class ClientHomeScreen extends StatefulWidget {
 
 class _ClientHomeScreenState extends State<ClientHomeScreen> {
   final AppointmentService _appointmentService = AppointmentService();
+  final DoctorService _doctorService = DoctorService();
   List<Appointment> _upcomingAppointments = [];
   bool _isLoading = true;
+  bool _isDataLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadAppointments();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isDataLoaded) {
+      _loadInitialData();
+      _isDataLoaded = true;
+    }
   }
 
-  Future<void> _loadAppointments() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadInitialData() async {
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    await _doctorService.getAllDoctors();
 
     final authProvider = context.read<AuthProvider>();
-    final clientId = authProvider.currentUser!.id;
+    if (authProvider.currentUser != null) {
+      final clientId = authProvider.currentUser!.id;
+      await _loadAppointments(clientId);
+    }
 
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadAppointments(String clientId) async {
     final allAppointments = await _appointmentService.getAppointmentsByClient(clientId);
 
-    setState(() {
-      _upcomingAppointments = allAppointments
-          .where((a) => a.isFuture && a.status != AppointmentStatus.cancelled)
-          .take(5)
-          .toList();
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _upcomingAppointments = allAppointments
+            .where((a) => a.isFuture && a.status != AppointmentStatus.cancelled)
+            .take(5)
+            .toList();
+      });
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.currentUser != null) {
+      final clientId = authProvider.currentUser!.id;
+      await _loadAppointments(clientId);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final user = authProvider.currentUser!;
+    final user = authProvider.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -75,7 +109,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadAppointments,
+        onRefresh: _onRefresh,
         child: _isLoading
             ? const LoadingIndicator(message: AppStrings.clientHomeLoadingAppointments)
             : SingleChildScrollView(

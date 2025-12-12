@@ -4,7 +4,6 @@ import 'package:agendafaciljp/models/doctor.dart';
 import 'package:agendafaciljp/providers/auth_provider.dart';
 import 'package:agendafaciljp/services/doctor_service.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 
 class ManageScheduleScreen extends StatefulWidget {
   const ManageScheduleScreen({super.key});
@@ -70,13 +69,13 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
 
     final updatedDoctor = _doctor!.copyWithDoctor(blockedDates: _blockedDates.toList());
     await _doctorService.updateDoctor(updatedDoctor);
+
+    if (!mounted) return;
     context.read<AuthProvider>().updateUser(updatedDoctor);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Datas de bloqueio salvas com sucesso!')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Datas de bloqueio salvas com sucesso!')),
+    );
   }
 
   // ----- Lógica para a Aba de Horários -----
@@ -85,13 +84,13 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
 
     final updatedDoctor = _doctor!.copyWithDoctor(availableSchedule: _weeklySchedule);
     await _doctorService.updateDoctor(updatedDoctor);
+
+    if (!mounted) return;
     context.read<AuthProvider>().updateUser(updatedDoctor);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Horários de atendimento salvos com sucesso!')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Horários de atendimento salvos com sucesso!')),
+    );
   }
   
   Future<void> _editDaySchedule(String dayKey) async {
@@ -130,9 +129,9 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
                   child: const Text('Adicionar Horário'),
                   onPressed: () async {
                     final TimeOfDay? startTime = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                    if (startTime == null) return;
+                    if (startTime == null || !context.mounted) return;
                     final TimeOfDay? endTime = await showTimePicker(context: context, initialTime: startTime.replacing(hour: startTime.hour + 1));
-                    if (endTime == null) return;
+                    if (endTime == null || !context.mounted) return;
 
                     final newSlot = TimeSlot(
                       start: startTime.format(context),
@@ -140,7 +139,6 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
                     );
                     setDialogState(() {
                       currentSlots.add(newSlot);
-                      // Ordena os horários
                       currentSlots.sort((a, b) => a.start.compareTo(b.start));
                     });
                   },
@@ -190,7 +188,6 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
     );
   }
   
-  // ----- Aba de Horários Semanais -----
   Widget _buildWeeklyScheduleTab() {
     return Column(
       children: [
@@ -229,7 +226,6 @@ class _ManageScheduleScreenState extends State<ManageScheduleScreen> {
     );
   }
 
-  // ----- Aba de Bloqueio de Datas -----
   Widget _buildBlockedDatesTab() {
     return Column(
       children: [

@@ -20,7 +20,7 @@ dependencies:
   firebase_core: ^2.27.0
   firebase_auth: ^4.17.8
   cloud_firestore: ^4.15.8
-  firebase_app_check: ^0.2.1+18
+  firebase_app_check: ^0.2.2+7
 
 dev_dependencies:
   flutter_test:
@@ -36,5 +36,5 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/icons/dreamflow_icon.jpg
+  image_path: assets/icons/icon.jpg
   remove_alpha_ios: true

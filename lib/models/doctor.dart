@@ -62,8 +62,7 @@ class Doctor extends User {
   };
 
   factory Doctor.fromJson(Map<String, dynamic> json) {
-    // Função auxiliar para converter datas de forma segura
-    DateTime _parseDate(dynamic date) {
+    DateTime parseDate(dynamic date) {
       if (date is Timestamp) {
         return date.toDate();
       }
@@ -79,8 +78,8 @@ class Doctor extends User {
       email: json['email'],
       phone: json['phone'],
       photoUrl: json['photoUrl'],
-      createdAt: _parseDate(json['createdAt']),
-      updatedAt: _parseDate(json['updatedAt']),
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
       crm: json['crm'],
       specialtyId: json['specialtyId'],
       specialtyName: json['specialtyName'],
@@ -89,13 +88,15 @@ class Doctor extends User {
       ratingCount: json['ratingCount'],
       isActive: json['isActive'] ?? true, 
       availableSchedule: (json['availableSchedule'] as Map<String, dynamic>? ?? {}).map(
-            (key, value) => MapEntry(
+        (key, value) => MapEntry(
           key,
-          (value as List).map((e) => TimeSlot.fromJson(e)).toList(),
+          (value as List)
+              .map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
+              .toList(),
         ),
       ),
       blockedDates: (json['blockedDates'] as List? ?? [])
-          .map((e) => _parseDate(e))
+          .map((e) => parseDate(e))
           .toList(),
     );
   }

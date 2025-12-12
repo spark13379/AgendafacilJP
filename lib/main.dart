@@ -30,11 +30,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Ativa o App Check para o modo de depuração
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.debug,
   );
+
   runApp(const MyApp());
 }
 
